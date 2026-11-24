@@ -1,5 +1,5 @@
 <title>Pavilion Menu</title>
-<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700;900&display=swap">
 <style>
 /* Layout: sticky cocoa header with section chips, stacked menu pages as paper cards, fullscreen zoom viewer. Palette sampled from the Pavilion PDF. */
@@ -72,6 +72,25 @@ main .inner{max-width:620px;margin:0 auto;padding-block:18px 36px;display:flex;f
 
 @media print{body *{display:none!important}body{background:#fff}}
 @media (prefers-reduced-motion:no-preference){.chip{transition:background .15s,color .15s}}
+@media (max-width:620px){
+  .wrap{padding-left:0;padding-right:0}
+  .head{padding-block:max(10px,env(safe-area-inset-top,0px)) 10px}
+  .head .inner{max-width:none;gap:8px}
+  .brand{padding-inline:16px}
+  .brand b{font-size:1.55rem}
+  .chips{gap:6px;margin:0;padding:4px 16px}
+  .chip{min-height:44px;padding:10px 13px;font-size:.68rem}
+  main .inner{max-width:none;padding-block:12px 24px;gap:12px}
+  .hint{padding-inline:16px}
+  .card{width:100%;max-width:none;border-radius:0;box-shadow:none}
+  .cbtn{width:44px;height:44px}
+  .bar.top{height:calc(52px + env(safe-area-inset-top,0px))}
+  .bar.bot{height:calc(68px + env(safe-area-inset-bottom,0px))}
+  #stage{top:calc(52px + env(safe-area-inset-top,0px));bottom:calc(68px + env(safe-area-inset-bottom,0px))}
+  .bot .group{gap:6px}
+  .zl{min-width:50px}
+  .foot{padding-bottom:max(12px,env(safe-area-inset-bottom,0px))}
+}
 </style>
 
 <header class="head">
