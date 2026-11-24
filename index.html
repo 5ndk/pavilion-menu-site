@@ -70,11 +70,24 @@ main .inner{max-width:620px;margin:0 auto;padding-block:18px 36px;display:flex;f
 .count{font-weight:700;font-size:.8rem;letter-spacing:.14em}
 .cbtn{width:46px;height:46px;border-radius:50%;border:1.5px solid rgba(229,200,180,.5);background:transparent;color:var(--sand);font:500 1.5rem/1 var(--font);cursor:pointer;display:grid;place-items:center;padding:0}
 .cbtn:active{background:var(--sand);color:var(--cocoa)}
+.cbtn:disabled{opacity:.35;cursor:not-allowed}
 .zl{min-width:58px;text-align:center;font-weight:700;font-size:.8rem;letter-spacing:.06em}
 .bot .group{display:flex;align-items:center;gap:10px}
-#stage{position:absolute;left:0;right:0;top:calc(54px + env(safe-area-inset-top,0px));bottom:calc(72px + env(safe-area-inset-bottom,0px));overflow:hidden;touch-action:none;cursor:grab}
-.pg{position:absolute;left:0;top:0;width:1515px;height:2150px;transform-origin:0 0;background-color:var(--paper);background-size:100% 100%;background-repeat:no-repeat}
+#stage{position:absolute;left:0;right:0;top:calc(54px + env(safe-area-inset-top,0px));bottom:calc(72px + env(safe-area-inset-bottom,0px));overflow:hidden;touch-action:none;cursor:grab;perspective:1400px}
+.pg{position:absolute;left:0;top:0;width:1515px;height:2150px;transform-origin:0 0;background-color:var(--paper);background-size:100% 100%;background-repeat:no-repeat;backface-visibility:hidden;will-change:transform,filter}
 .pg::after{background-size:34% auto}
+.pg.turn-next{animation:turnNext .38s cubic-bezier(.22,.61,.36,1)}
+.pg.turn-prev{animation:turnPrev .38s cubic-bezier(.22,.61,.36,1)}
+@keyframes turnNext{
+  0%{filter:brightness(1);transform-origin:100% 50%;rotate:y 0deg}
+  45%{filter:brightness(.82)}
+  100%{filter:brightness(1);transform-origin:100% 50%;rotate:y -3deg}
+}
+@keyframes turnPrev{
+  0%{filter:brightness(1);transform-origin:0 50%;rotate:y 0deg}
+  45%{filter:brightness(.82)}
+  100%{filter:brightness(1);transform-origin:0 50%;rotate:y 3deg}
+}
 
 #shield:not([hidden]){position:fixed;inset:0;z-index:100;background:var(--cocoa);display:grid;place-items:center;color:var(--sand);font-weight:900;letter-spacing:.18em;font-size:1.6rem}
 
@@ -218,13 +231,38 @@ function zoomAt(z, cx, cy) {
   s = z;
   apply();
 }
-function show(i) {
-  idx = (i + PAGES.length) % PAGES.length;
+let turning = false;
+function show(i, direction) {
+  if (i < 0 || i >= PAGES.length) {
+    pg.style.transition = "rotate .22s ease, opacity .22s ease";
+    pg.style.rotate = "0deg";
+    pg.style.opacity = "1";
+    setTimeout(() => { pg.style.transition = ""; }, 230);
+    return false;
+  }
+  const oldIdx = idx;
+  idx = i;
+  if (direction === undefined) direction = i > oldIdx ? 1 : i < oldIdx ? -1 : 0;
   pg.style.backgroundImage = "url(" + PAGES[idx] + ")";
   $("#count").textContent = LABELS[idx].toUpperCase() + "  ·  " + (idx + 1) + " / " + PAGES.length;
   measure();
   s = fit; tx = 0; ty = 0;
+  pg.style.rotate = "0deg";
+  pg.style.opacity = "1";
   apply();
+  $("#prev").disabled = idx === 0;
+  $("#next").disabled = idx === PAGES.length - 1;
+  if (direction && lb.hidden === false && !turning) {
+    turning = true;
+    pg.classList.remove("turn-next","turn-prev");
+    void pg.offsetWidth;
+    pg.classList.add(direction > 0 ? "turn-next" : "turn-prev");
+    pg.addEventListener("animationend", () => {
+      pg.classList.remove("turn-next","turn-prev");
+      turning = false;
+    }, { once: true });
+  }
+  return true;
 }
 function openLb(i) {
   lb.hidden = false;
@@ -237,8 +275,8 @@ function closeLb() {
   cards[idx].scrollIntoView({ block: "center" });
 }
 $("#close").addEventListener("click", closeLb);
-$("#prev").addEventListener("click", () => show(idx - 1));
-$("#next").addEventListener("click", () => show(idx + 1));
+$("#prev").addEventListener("click", () => show(idx - 1, -1));
+$("#next").addEventListener("click", () => show(idx + 1, 1));
 $("#zin").addEventListener("click", () => zoomAt(s * 1.4, sw / 2, sh / 2));
 $("#zout").addEventListener("click", () => zoomAt(s / 1.4, sw / 2, sh / 2));
 
@@ -279,6 +317,17 @@ stage.addEventListener("pointermove", (e) => {
     zoomAt(pinch.s * (dist(a, b) / pinch.d), m.x - r.left, m.y - r.top);
   } else if (ptrs.size === 1) {
     tx += dx; ty += dy;
+    if (s <= fit * 1.05) {
+      if ((down && e.clientX - down.x > 0 && idx === 0) ||
+          (down && e.clientX - down.x < 0 && idx === PAGES.length - 1)) {
+        const resistance = Math.max(-18, Math.min(18, (e.clientX - down.x) * 0.08));
+        pg.style.rotate = resistance + "deg";
+        pg.style.opacity = String(1 - Math.abs(resistance) / 60);
+      } else if (down) {
+        const pull = Math.max(-12, Math.min(12, (e.clientX - down.x) * 0.025));
+        pg.style.rotate = pull + "deg";
+      }
+    }
     apply();
     if (down && Math.hypot(e.clientX - down.x, e.clientY - down.y) > 8) moved = true;
   }
@@ -299,7 +348,12 @@ function endPtr(e) {
       else zoomAt(fit * 2.5, e.clientX - r.left, e.clientY - r.top);
     } else lastTap = now;
   } else if (s <= fit * 1.05 && Math.abs(ddx) > 70 && Math.abs(ddx) > Math.abs(ddy) * 1.5) {
-    show(idx + (ddx < 0 ? 1 : -1));
+    show(idx + (ddx < 0 ? 1 : -1), ddx < 0 ? 1 : -1);
+  } else {
+    pg.style.transition = "rotate .22s ease, opacity .22s ease";
+    pg.style.rotate = "0deg";
+    pg.style.opacity = "1";
+    setTimeout(() => { pg.style.transition = ""; }, 230);
   }
   down = null;
 }
@@ -318,8 +372,8 @@ document.addEventListener("keydown", (e) => {
   const k = (e.key || "").toLowerCase();
   if (!lb.hidden) {
     if (k === "escape") return closeLb();
-    if (k === "arrowright") return show(idx + 1);
-    if (k === "arrowleft") return show(idx - 1);
+    if (k === "arrowright") return show(idx + 1, 1);
+    if (k === "arrowleft") return show(idx - 1, -1);
     if (k === "+" || k === "=") return zoomAt(s * 1.4, sw / 2, sh / 2);
     if (k === "-") return zoomAt(s / 1.4, sw / 2, sh / 2);
   }
