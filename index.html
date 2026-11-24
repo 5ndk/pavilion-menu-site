@@ -1,5 +1,7 @@
 <title>Pavilion Menu</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="icon" type="image/png" href="pavilion-logo.png">
+<link rel="apple-touch-icon" href="pavilion-logo.png">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700;900&display=swap">
 <style>
 /* Layout: sticky cocoa header with section chips, stacked menu pages as paper cards, fullscreen zoom viewer. Palette sampled from the Pavilion PDF. */
@@ -34,7 +36,8 @@ body.lock{overflow:hidden}
 
 .head{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--cocoa);color:var(--sand);padding-block:14px 12px;box-shadow:0 4px 18px rgba(59,23,8,.25)}
 .head .inner{max-width:620px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
-.brand{display:flex;align-items:baseline;gap:12px}
+.brand{display:flex;align-items:center;gap:6px}
+.brand-logo{width:auto;height:28px;object-fit:contain;flex:none}
 .brand b{font-weight:900;font-size:1.45rem;letter-spacing:.1em;color:var(--sand)}
 .brand span{font-weight:700;font-size:.7rem;letter-spacing:.38em;color:var(--clay)}
 .chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin-inline:-2px;padding:2px}
@@ -73,21 +76,9 @@ main .inner{max-width:620px;margin:0 auto;padding-block:18px 36px;display:flex;f
 .cbtn:disabled{opacity:.35;cursor:not-allowed}
 .zl{min-width:58px;text-align:center;font-weight:700;font-size:.8rem;letter-spacing:.06em}
 .bot .group{display:flex;align-items:center;gap:10px}
-#stage{position:absolute;left:0;right:0;top:calc(54px + env(safe-area-inset-top,0px));bottom:calc(72px + env(safe-area-inset-bottom,0px));overflow:hidden;touch-action:none;cursor:grab;perspective:1400px}
-.pg{position:absolute;left:0;top:0;width:1515px;height:2150px;transform-origin:0 0;background-color:var(--paper);background-size:100% 100%;background-repeat:no-repeat;backface-visibility:hidden;will-change:transform,filter}
+#stage{position:absolute;left:0;right:0;top:calc(54px + env(safe-area-inset-top,0px));bottom:calc(72px + env(safe-area-inset-bottom,0px));overflow:hidden;touch-action:none;cursor:grab}
+.pg{position:absolute;left:0;top:0;width:1515px;height:2150px;transform-origin:0 0;background-color:var(--paper);background-size:100% 100%;background-repeat:no-repeat}
 .pg::after{background-size:34% auto}
-.pg.turn-next{animation:turnNext .38s cubic-bezier(.22,.61,.36,1)}
-.pg.turn-prev{animation:turnPrev .38s cubic-bezier(.22,.61,.36,1)}
-@keyframes turnNext{
-  0%{filter:brightness(1);transform-origin:100% 50%;rotate:y 0deg}
-  45%{filter:brightness(.82)}
-  100%{filter:brightness(1);transform-origin:100% 50%;rotate:y -3deg}
-}
-@keyframes turnPrev{
-  0%{filter:brightness(1);transform-origin:0 50%;rotate:y 0deg}
-  45%{filter:brightness(.82)}
-  100%{filter:brightness(1);transform-origin:0 50%;rotate:y 3deg}
-}
 
 #shield:not([hidden]){position:fixed;inset:0;z-index:100;background:var(--cocoa);display:grid;place-items:center;color:var(--sand);font-weight:900;letter-spacing:.18em;font-size:1.6rem}
 
@@ -98,6 +89,7 @@ main .inner{max-width:620px;margin:0 auto;padding-block:18px 36px;display:flex;f
   .head{padding-block:max(10px,env(safe-area-inset-top,0px)) 10px}
   .head .inner{max-width:none;gap:8px}
   .brand{padding-inline:16px}
+  .brand-logo{height:28px}
   .brand b{font-size:1.55rem}
   .chips{gap:6px;margin:0;padding:4px 16px}
   .chip{min-height:44px;padding:10px 13px;font-size:.68rem}
@@ -117,7 +109,7 @@ main .inner{max-width:620px;margin:0 auto;padding-block:18px 36px;display:flex;f
 <header class="head">
   <div class="wrap">
     <div class="inner">
-      <div class="brand"><b>PAVILION</b><span>MENU</span></div>
+      <div class="brand"><img class="brand-logo" src="pavilion-logo.png" alt="Pavilion logo"><b>PAVILION</b><span>MENU</span></div>
       <nav class="chips" id="chips" aria-label="Menu sections"></nav>
     </div>
   </div>
@@ -231,15 +223,8 @@ function zoomAt(z, cx, cy) {
   s = z;
   apply();
 }
-let turning = false;
 function show(i, direction) {
-  if (i < 0 || i >= PAGES.length) {
-    pg.style.transition = "rotate .22s ease, opacity .22s ease";
-    pg.style.rotate = "0deg";
-    pg.style.opacity = "1";
-    setTimeout(() => { pg.style.transition = ""; }, 230);
-    return false;
-  }
+  if (i < 0 || i >= PAGES.length) return false;
   const oldIdx = idx;
   idx = i;
   if (direction === undefined) direction = i > oldIdx ? 1 : i < oldIdx ? -1 : 0;
@@ -247,21 +232,9 @@ function show(i, direction) {
   $("#count").textContent = LABELS[idx].toUpperCase() + "  ·  " + (idx + 1) + " / " + PAGES.length;
   measure();
   s = fit; tx = 0; ty = 0;
-  pg.style.rotate = "0deg";
-  pg.style.opacity = "1";
   apply();
   $("#prev").disabled = idx === 0;
   $("#next").disabled = idx === PAGES.length - 1;
-  if (direction && lb.hidden === false && !turning) {
-    turning = true;
-    pg.classList.remove("turn-next","turn-prev");
-    void pg.offsetWidth;
-    pg.classList.add(direction > 0 ? "turn-next" : "turn-prev");
-    pg.addEventListener("animationend", () => {
-      pg.classList.remove("turn-next","turn-prev");
-      turning = false;
-    }, { once: true });
-  }
   return true;
 }
 function openLb(i) {
@@ -317,17 +290,6 @@ stage.addEventListener("pointermove", (e) => {
     zoomAt(pinch.s * (dist(a, b) / pinch.d), m.x - r.left, m.y - r.top);
   } else if (ptrs.size === 1) {
     tx += dx; ty += dy;
-    if (s <= fit * 1.05) {
-      if ((down && e.clientX - down.x > 0 && idx === 0) ||
-          (down && e.clientX - down.x < 0 && idx === PAGES.length - 1)) {
-        const resistance = Math.max(-18, Math.min(18, (e.clientX - down.x) * 0.08));
-        pg.style.rotate = resistance + "deg";
-        pg.style.opacity = String(1 - Math.abs(resistance) / 60);
-      } else if (down) {
-        const pull = Math.max(-12, Math.min(12, (e.clientX - down.x) * 0.025));
-        pg.style.rotate = pull + "deg";
-      }
-    }
     apply();
     if (down && Math.hypot(e.clientX - down.x, e.clientY - down.y) > 8) moved = true;
   }
@@ -349,11 +311,6 @@ function endPtr(e) {
     } else lastTap = now;
   } else if (s <= fit * 1.05 && Math.abs(ddx) > 70 && Math.abs(ddx) > Math.abs(ddy) * 1.5) {
     show(idx + (ddx < 0 ? 1 : -1), ddx < 0 ? 1 : -1);
-  } else {
-    pg.style.transition = "rotate .22s ease, opacity .22s ease";
-    pg.style.rotate = "0deg";
-    pg.style.opacity = "1";
-    setTimeout(() => { pg.style.transition = ""; }, 230);
   }
   down = null;
 }
