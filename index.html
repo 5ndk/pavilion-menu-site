@@ -16,6 +16,14 @@
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html{background:var(--bg)}
+html{
+  scrollbar-width:thin;
+  scrollbar-color:var(--cocoa) var(--bg);
+}
+::-webkit-scrollbar{width:7px;height:7px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--cocoa);border-radius:999px;border:1px solid var(--bg)}
+::-webkit-scrollbar-thumb:hover{background:var(--ink)}
 body{
   margin:0;background:var(--bg);color:var(--cocoa);font-family:var(--font);
   -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;
